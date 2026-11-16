@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+using Microsoft.VisualBasic;
 using UnityEngine;
 
 namespace PushBox
@@ -6,9 +8,11 @@ namespace PushBox
     {
         public Vector2Int PlayerFrom;
         public Vector2Int PlayerTo;
-
+        public Box Box;
         public Vector2Int BoxFrom;
         public Vector2Int BoxTo;
+
+        public bool PushedBox => Box != null;
     }
 
     public class Board
@@ -20,6 +24,7 @@ namespace PushBox
 
         readonly bool[,] Walls;
         readonly bool[,] Targets;
+        readonly Box[,] Boxes;
 
         public Board(int minx,int miny,int width,int height)
         {
@@ -29,6 +34,7 @@ namespace PushBox
             Height=height;
             Walls=new bool[Width,Height];
             Targets=new bool[Width,Height];
+            Boxes=new Box[Width,Height];
         }
 
         public bool InBounds(int x,int y)   //判断是否在边界内
@@ -64,10 +70,39 @@ namespace PushBox
                 Targets[x-MinX,y-MinY]=true;
         }
 
+        public Box BoxAt(int x,int y)
+        {
+            if(InBounds(x,y))
+                return Boxes[x-MinX,y-MinY];
+            else
+                return null;
+        }
+
+        public void SetBox(int x,int y,Box box)
+        {
+            if(InBounds(x,y))
+                Boxes[x-MinX,y-MinY]=box;
+        }
+
+        public void ClearBox(int x,int y)
+        {
+            if(InBounds(x,y))
+                Boxes[x-MinX,y-MinY]=null;
+        }
+
         public Rect WorldRect()     //世界棋盘
         {
             return new Rect(MinX,MinY,Width,Height);
         }
+    }
+
+        /// <summary>格子坐标 → 世界坐标。Grid 缺失时按 1 单位一格兜底。</summary>
+    public static class GridUtil
+    {
+        public static Vector3 CellCenter(Grid grid, Vector2Int cell)
+            => grid != null
+                ? grid.GetCellCenterWorld(new Vector3Int(cell.x, cell.y, 0))
+                : new Vector3(cell.x + 0.5f, cell.y + 0.5f, 0f);
     }
 
     
