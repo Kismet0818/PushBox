@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
@@ -18,6 +19,10 @@ namespace PushBox
         public float moveDuration = 0.12f;
 
         [SerializeField] int sortingOrder = 10;
+        [Header("Animation")]
+        [SerializeField] Animator animator;
+
+        Vector2Int facing = Vector2Int.down;
 
         Board board;
         Grid grid;
@@ -32,6 +37,12 @@ namespace PushBox
 
             var sr = GetComponent<SpriteRenderer>();
             if (sr != null) sr.sortingOrder = sortingOrder;
+
+            if(animator == null)
+                animator = GetComponent<Animator>();
+
+            facing = Vector2Int.down;
+            PlayAnimation("Idle");
         }
 
         void Update()
@@ -96,6 +107,9 @@ namespace PushBox
                 record = new MoveRecord { PlayerFrom = Cell, PlayerTo = next };
             }
 
+            facing = dir;
+            PlayAnimation("Walk");
+
             StartCoroutine(MoveRoutine(record));
             return true;
         }
@@ -119,6 +133,8 @@ namespace PushBox
             Cell = record.PlayerTo;
             IsMoving = false;
 
+            PlayAnimation("Idle");
+
             if (game == null) game = GameManager.Instance;
             if (game != null) game.OnPlayerMoved(record);
         }
@@ -129,6 +145,31 @@ namespace PushBox
             if (record.PushedBox) record.Box.PlaceAt(record.BoxFrom);
             Cell = record.PlayerFrom;
             transform.position = GridUtil.CellCenter(grid, record.PlayerFrom);
+
+            facing = record.PlayerFrom - record.PlayerTo;
+            PlayAnimation("Idle");
+        }
+
+        void PlayAnimation(string action)
+        {
+            if(animator == null || animator.runtimeAnimatorController == null)
+                return;
+            
+            string stateName = $"{action}_{DirectionName(facing)}";
+            animator.Play(stateName,0,0f);
+        }
+
+        static string DirectionName(Vector2Int direction)
+        {
+            if(direction == Vector2Int.up)
+                return "Up";
+            if(direction == Vector2Int.down)
+                return "Down";
+            if(direction == Vector2Int.left)
+                return "Left";
+            if(direction == Vector2Int.right)
+                return "Right";
+            return "Down";
         }
     }
 }
